@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getCurrentAdmin } from "@/lib/auth/current-admin";
-import { saveImage, MAX_UPLOAD_BYTES, ALLOWED_MIME } from "@/lib/storage/local";
+import { saveImage, MAX_UPLOAD_BYTES, ALLOWED_MIME } from "@/lib/storage";
 
 export async function POST(req: Request) {
   // Réservé aux administrateurs connectés.
