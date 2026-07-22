@@ -18,6 +18,8 @@ export async function getRates(): Promise<Rates> {
   try {
     const res = await fetch(API, {
       next: { revalidate: 3600, tags: ["fx-rates"] },
+      // Ne jamais bloquer le rendu : si l'API tarde, on retombe sur le statique.
+      signal: AbortSignal.timeout(2500),
     });
     if (!res.ok) return FALLBACK;
 
