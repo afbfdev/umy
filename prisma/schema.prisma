@@ -1,0 +1,200 @@
+// ─────────────────────────────────────────────────────────────
+// UMY — Parfums & Beauté · Schéma Prisma
+// Base : PostgreSQL (Supabase)
+// ─────────────────────────────────────────────────────────────
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+/// Catégorie de produits (Parfums, Soins, Beauté, Coffrets…)
+model Category {
+  id          String  @id @default(cuid())
+  name        String
+  slug        String  @unique
+  description String?
+  imageUrl    String?
+  /// Position d'affichage dans les grilles (tri manuel)
+  position    Int     @default(0)
+  isFeatured  Boolean @default(false)
+
+  products Product[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([slug])
+  @@map("categories")
+}
+
+/// Produit vendu par la maison
+model Product {
+  id          String  @id @default(cuid())
+  name        String
+  slug        String  @unique
+  /// Description courte affichée sur les cartes
+  tagline     String?
+  description String?
+  /// Famille olfactive / gamme (ex. "Boisé", "Floral", "Hydratant")
+  family      String?
+  /// Image principale (visuel packshot)
+  imageUrl    String?
+  /// Galerie secondaire
+  gallery     String[] @default([])
+
+  isActive   Boolean @default(true)
+  isFeatured Boolean @default(false)
+
+  /// Stock total (dénormalisé = somme des stocks des déclinaisons).
+  /// Maintenu à chaque mouvement pour permettre filtres/tri/pagination en SQL.
+  stockTotal Int @default(0)
+
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  variants ProductVariant[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([categoryId])
+  @@index([slug])
+  @@index([stockTotal])
+  @@index([createdAt])
+  @@index([categoryId, isActive])
+  @@map("products")
+}
+
+/// Déclinaison d'un produit (ex. contenance 30ml / 50ml / 100ml)
+model ProductVariant {
+  id    String @id @default(cuid())
+  /// Libellé lisible (ex. "Eau de Parfum · 50 ml")
+  name  String
+  sku   String @unique
+  /// Contenance en millilitres (null pour un soin non liquide)
+  volumeMl Int?
+
+  /// Prix stocké en centimes pour éviter les erreurs de flottants
+  priceCents Int
+  /// Prix barré éventuel (promotion), en centimes
+  compareAtCents Int?
+  currency       String @default("EUR")
+
+  stock     Int     @default(0)
+  isDefault Boolean @default(false)
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([productId])
+  @@map("product_variants")
+}
+
+/// Cycle de vie d'une commande
+enum OrderStatus {
+  PENDING /// Reçue, à confirmer
+  CONFIRMED
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+/// Mode de règlement (paiement à la livraison pour l'instant)
+enum PaymentMethod {
+  CASH_ON_DELIVERY
+}
+
+/// Commande client
+model Order {
+  id            String        @id @default(cuid())
+  /// Référence lisible (ex. UMY-LX9K2P)
+  orderNumber   String        @unique
+  status        OrderStatus   @default(PENDING)
+  paymentMethod PaymentMethod @default(CASH_ON_DELIVERY)
+
+  // Contact
+  email     String
+  firstName String
+  lastName  String
+  phone     String
+
+  // Adresse de livraison
+  address      String
+  addressLine2 String?
+  postalCode   String
+  city         String
+  country      String  @default("France")
+  notes        String?
+
+  // Montants (en centimes)
+  subtotalCents Int
+  shippingCents Int
+  totalCents    Int
+  currency      String @default("EUR")
+
+  items OrderItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([orderNumber])
+  @@index([createdAt])
+  @@index([status, createdAt])
+  @@map("orders")
+}
+
+/// Ligne de commande — instantané figé (le catalogue peut évoluer ensuite)
+model OrderItem {
+  id      String @id @default(cuid())
+  orderId String
+  order   Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  // Références (nullables : la commande survit à la suppression d'un produit)
+  variantId String?
+  productId String?
+
+  // Instantané des informations au moment de l'achat
+  productName    String
+  variantName    String
+  unitPriceCents Int
+  quantity       Int
+  lineTotalCents Int
+
+  createdAt DateTime @default(now())
+
+  @@index([orderId])
+  @@map("order_items")
+}
+
+/// Vue de page — mesure d'audience first-party, sans donnée personnelle.
+/// Alimentée uniquement si le visiteur a consenti à la mesure d'audience.
+model PageView {
+  id        String   @id @default(cuid())
+  path      String
+  createdAt DateTime @default(now())
+
+  @@index([createdAt])
+  @@map("page_views")
+}
+
+/// Utilisateur du back-office
+model AdminUser {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  role         String   @default("admin")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("admin_users")
+}

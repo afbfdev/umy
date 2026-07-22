@@ -1,0 +1,61 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* ── Tokens sémantiques (HSL) dérivés de la charte UMY ── */
+    --background: 42 33% 94%; /* crème doux #F4F1EA */
+    --foreground: 351 57% 18%; /* bordeaux profond #4A141C */
+
+    --card: 40 35% 96%;
+    --card-foreground: 351 57% 18%;
+
+    --primary: 351 57% 18%; /* bordeaux — boutons */
+    --primary-foreground: 42 33% 96%;
+
+    --secondary: 10 35% 80%; /* nude #DDBFB9 */
+    --secondary-foreground: 351 57% 18%;
+
+    --muted: 39 28% 88%;
+    --muted-foreground: 351 12% 38%;
+
+    --accent: 10 35% 80%;
+    --accent-foreground: 351 57% 18%;
+
+    --border: 38 22% 82%;
+    --input: 38 22% 82%;
+    --ring: 351 57% 18%;
+
+    --radius: 0.25rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-feature-settings: "ss01", "cv01";
+  }
+
+  /* Titres en serif hybride par défaut */
+  h1, h2, h3, h4 {
+    @apply font-serif;
+    text-wrap: balance;
+  }
+
+  /* Sélection aux couleurs de la maison */
+  ::selection {
+    @apply bg-bordeaux text-cream-100;
+  }
+}
+
+@layer utilities {
+  /* Petit label typographique « luxe » (majuscules espacées) */
+  .eyebrow {
+    @apply font-sans text-xs uppercase tracking-luxe text-bordeaux/70;
+  }
+}
