@@ -29,6 +29,7 @@ export async function saveImageSupabase(
     {
       method: "POST",
       headers: {
+        apikey: SERVICE_KEY,
         Authorization: `Bearer ${SERVICE_KEY}`,
         "Content-Type": mime,
         "x-upsert": "true",

@@ -18,6 +18,7 @@ async function main() {
   const res = await fetch(`${SB_URL}/storage/v1/bucket`, {
     method: "POST",
     headers: {
+      apikey: KEY,
       Authorization: `Bearer ${KEY}`,
       "Content-Type": "application/json",
     },
