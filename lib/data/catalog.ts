@@ -32,12 +32,17 @@ export type CategoryWithProducts = Prisma.CategoryGetPayload<
 
 /* ── Requêtes ─────────────────────────────────────────────────── */
 
-/** Toutes les catégories, ordonnées, avec le nombre de produits. */
-export function getCategories(): Promise<CategoryWithCount[]> {
-  return prisma.category.findMany({
-    orderBy: { position: "asc" },
-    include: { _count: { select: { products: true } } },
-  });
+/** Toutes les catégories, ordonnées, avec le nombre de produits.
+ *  Résilient au build : [] si la base est temporairement injoignable. */
+export async function getCategories(): Promise<CategoryWithCount[]> {
+  try {
+    return await prisma.category.findMany({
+      orderBy: { position: "asc" },
+      include: { _count: { select: { products: true } } },
+    });
+  } catch {
+    return [];
+  }
 }
 
 /** Une catégorie et ses produits actifs (avec déclinaisons). */
@@ -259,17 +264,28 @@ export function getFeaturedProducts(take = 4): Promise<ProductCard[]> {
 
 /* ── Helpers de rendu statique (generateStaticParams) ─────────── */
 
+// Ces fonctions alimentent `generateStaticParams` au build : si la base est
+// injoignable/vide au moment du build, on renvoie [] (pages générées à la
+// demande via ISR) plutôt que de faire échouer tout le déploiement.
 export async function getAllCategorySlugs(): Promise<string[]> {
-  const rows = await prisma.category.findMany({ select: { slug: true } });
-  return rows.map((r) => r.slug);
+  try {
+    const rows = await prisma.category.findMany({ select: { slug: true } });
+    return rows.map((r) => r.slug);
+  } catch {
+    return [];
+  }
 }
 
 export async function getAllProductSlugs(): Promise<string[]> {
-  const rows = await prisma.product.findMany({
-    where: { isActive: true },
-    select: { slug: true },
-  });
-  return rows.map((r) => r.slug);
+  try {
+    const rows = await prisma.product.findMany({
+      where: { isActive: true },
+      select: { slug: true },
+    });
+    return rows.map((r) => r.slug);
+  } catch {
+    return [];
+  }
 }
 
 /* ── Utilitaires métier ───────────────────────────────────────── */
