@@ -39,6 +39,10 @@ export async function POST(req: Request) {
     return NextResponse.json({ url });
   } catch (e) {
     console.error("[upload]", e);
-    return NextResponse.json({ error: "Échec de l'enregistrement." }, { status: 500 });
+    const detail = e instanceof Error ? e.message : "erreur inconnue";
+    return NextResponse.json(
+      { error: `Échec de l'enregistrement : ${detail}` },
+      { status: 500 },
+    );
   }
 }
